@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('id_pengirim');
             $table->unsignedBigInteger('id_proyek');
             $table->string('judul');
-            $table->string('isi');
+            $table->string('isi'); 
             $table->enum('status',['dibaca', 'belum_dibaca']);
             $table->timestamps();
 
