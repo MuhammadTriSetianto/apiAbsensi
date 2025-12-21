@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Proyek;
+use Illuminate\Http\Request;
+
+class ProyekController extends Controller
+{
+    public function index()
+    {
+        $proyek = Proyek::all();
+        return response()->json([
+            'status' => 200,
+            'success' => true,
+            'data' => $proyek
+        ]);
+    }
+
+    public function show($id)
+    {
+        $proyek = Proyek::find($id);
+        return response()->json([
+            'status' => 200,
+            'success' => true,
+            'data' => $proyek
+        ]);
+    }
+
+    public function create_project(Request $request)
+    {
+        $data_proyek = $request->validate([
+            'nama_proyek'   => 'required|max:50',
+            'lokasi_proyek' => 'required|max:255',
+            'deskripsi'     => 'nullable',
+            'log_proyek'    => 'nullable',
+            'lat_proyek'    => 'nullable',
+        ]);
+        $proyek = Proyek::create([
+            'nama_proyek' => $data_proyek['nama_proyek'],
+            'lokasi_proyek' => $data_proyek['lokasi_proyek'],
+            'long_proyek' => $data_proyek['log_proyek'],
+            'lat_proyek' => $data_proyek['lat_proyek'],
+        ]);
+        return response()->json([
+            'status' => 201,
+            'success' => true,
+            'data' => $proyek
+        ]);
+    }
+
+    public function delete_project($id)
+    {
+        $proyek = Proyek::find($id);
+        $proyek->delete();
+        return response()->json([
+            'status' => 200,
+            'success' => true,
+            'data' => $proyek
+        ]);
+    }
+}
