@@ -1,40 +1,100 @@
 <?php
 
-use App\Http\Controllers\AbsensisController;
-use Illuminate\Support\Facades\Auth;        
-use App\Http\Controllers\Api\AuthController;  
-use App\Http\Controllers\Api\ProyekController;
-use App\Http\Controllers\IzinController;
-use App\Models\Absensi;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProyekController;
+use App\Http\Controllers\AbsensisController;
+use App\Http\Controllers\IzinController;
+use App\Http\Controllers\CutiController;
+use App\Http\Controllers\NotifikasiController;
 
-Route :: post('/register',[AuthController::class,'register']);
-Route :: post('/login',[AuthController::class,'login']);
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+*/
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route :: get('/profile',[AuthController::class,'profile']);
-    Route :: post('/logout',[AuthController::class,'logout']);
+Route::post('/register', [AuthController::class, 'register']);
 
-    //proyek
-}); 
-Route :: get('/proyek',[ProyekController::class,'index']);
-Route :: get('/proyek/{id}',[ProyekController::class,'show']);
-Route :: post('/proyek',[ProyekController::class,'create_project']);
+Route::middleware('auth:sanctum')->group(function () {});
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/profile', [AuthController::class, 'profile']);
+Route::post('/logout', [AuthController::class, 'logout']);
 
-Route :: get('/absen',[AbsensisController::class,'index']);
-Route :: get('/absen/{id}',[AbsensisController::class,'masuk']);
-Route :: put('/absen/{id}',[AbsensisController::class,'pulang']);
-Route :: delete('/absen/{id}',[AbsensisController::class,'destroy']);
 
-Route :: get('/izin',[IzinController::class,'index']);
-Route :: post('/izin',[IzinController::class,'izin']);
-Route :: put('/detailIzin/{id}',[IzinController::class,'show']);
-Route :: delete('/hapusizin/{id}',[IzinController::class,'destroy']);
 
-Route :: get('/usersproyek',[IzinController::class,'index']);
-Route :: post('/usersproyek',[IzinController::class,'store']);
-Route :: get('/usersproyek/{id}',[IzinController::class,'show']);
-Route :: put('/usersproyek/{id}',[IzinController::class,'upate']);
-Route :: delete('/usersproyek/{id}',[IzinController::class,'destroy']);
+/*
+|--------------------------------------------------------------------------
+| PROYEK
+|--------------------------------------------------------------------------
+*/
+Route::prefix('proyek')->group(function () {
+    Route::get('/', [ProyekController::class, 'index']);
+    Route::get('/{id}', [ProyekController::class, 'show']);
+    Route::post('/', [ProyekController::class, 'create_project']);
+    Route::put('/{id}', [ProyekController::class, 'update_project']);
+});
 
-Route :: get('/lihatfoto/{id}',[AbsensisController::class,'show']);
+/*
+|--------------------------------------------------------------------------
+| ABSENSI
+|--------------------------------------------------------------------------
+*/
+Route::prefix('absen')->group(function () {
+    Route::get('/', [AbsensisController::class, 'index']);
+    Route::get('/{id}', [AbsensisController::class, 'masuk']);
+    Route::put('/{id}', [AbsensisController::class, 'pulang']);
+    Route::delete('/{id}', [AbsensisController::class, 'destroy']);
+    Route::get('/{id}/foto', [AbsensisController::class, 'show']);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| IZIN
+|--------------------------------------------------------------------------
+*/
+Route::prefix('izin')->group(function () {
+    Route::get('/', [IzinController::class, 'index']);
+    Route::post('/', [IzinController::class, 'izin']);
+    Route::get('/{id}', [IzinController::class, 'show']);
+    Route::delete('/{id}', [IzinController::class, 'destroy']);
+});
+
+
+/*
+    |--------------------------------------------------------------------------
+    | USERS PROYEK
+    |--------------------------------------------------------------------------
+    */
+Route::prefix('usersproyek')->group(function () {
+    Route::get('/', [IzinController::class, 'index']);
+    Route::post('/', [IzinController::class, 'store']);
+    Route::get('/{id}', [IzinController::class, 'show']);
+    Route::put('/{id}', [IzinController::class, 'update']);
+    Route::delete('/{id}', [IzinController::class, 'destroy']);
+});
+
+/*
+    |--------------------------------------------------------------------------
+    | CUTI
+    |--------------------------------------------------------------------------
+    */
+Route::prefix('cuti')->group(function () {
+    Route::post('/', [CutiController::class, 'store']);
+    Route::put('/{id}/approve', [CutiController::class, 'approve']);
+    Route::put('/{id}/reject', [CutiController::class, 'reject']);
+});
+
+/*
+    |--------------------------------------------------------------------------
+    | NOTIFIKASI
+    |--------------------------------------------------------------------------
+    */
+Route::prefix('notifikasi')->group(function () {
+    Route::get('/', [NotifikasiController::class, 'index']);
+    Route::post('/', [NotifikasiController::class, 'store']);
+    Route::get('/{id}', [NotifikasiController::class, 'show']);
+    Route::put('/{id}/read', [NotifikasiController::class, 'markAsRead']);
+    Route::delete('/{id}', [NotifikasiController::class, 'destroy']);
+});

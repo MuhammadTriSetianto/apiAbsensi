@@ -50,6 +50,42 @@ class ProyekController extends Controller
         ]);
     }
 
+public function update_project(Request $request, $id)
+{
+    $proyek = Proyek::find($id);
+
+    if (!$proyek) {
+        return response()->json([
+            'status' => 404,
+            'success' => false,
+            'message' => 'Data proyek tidak ditemukan'
+        ], 404);
+    }
+
+    $data_proyek = $request->validate([
+        'nama_proyek'   => 'required|max:50',
+        'lokasi_proyek' => 'required|max:255',
+        'deskripsi'     => 'nullable',
+        'log_proyek'    => 'nullable',
+        'lat_proyek'    => 'nullable',
+    ]);
+
+    $proyek->update([
+        'nama_proyek'   => $data_proyek['nama_proyek'],
+        'lokasi_proyek' => $data_proyek['lokasi_proyek'],
+        'long_proyek'   => $data_proyek['log_proyek'],
+        'lat_proyek'    => $data_proyek['lat_proyek'],
+    ]);
+
+    return response()->json([
+        'status' => 200,
+        'success' => true,
+        'message' => 'Data proyek berhasil diperbarui',
+        'data' => $proyek
+    ]);
+}
+
+
     public function delete_project($id)
     {
         $proyek = Proyek::find($id);
