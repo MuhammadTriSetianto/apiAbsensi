@@ -16,10 +16,12 @@ use App\Http\Controllers\NotifikasiController;
 
 Route::post('/register', [AuthController::class, 'register']);
 
-Route::middleware('auth:sanctum')->group(function () {});
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/profile', [AuthController::class, 'profile']);
-Route::post('/logout', [AuthController::class, 'logout']);
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/profile', [AuthController::class, 'profile']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
 
 
 
@@ -60,8 +62,6 @@ Route::prefix('izin')->group(function () {
     Route::get('/{id}', [IzinController::class, 'show']);
     Route::delete('/{id}', [IzinController::class, 'destroy']);
 });
-
-
 /*
     |--------------------------------------------------------------------------
     | USERS PROYEK

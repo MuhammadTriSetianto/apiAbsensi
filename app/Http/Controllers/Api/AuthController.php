@@ -24,7 +24,7 @@ class AuthController extends Controller
             //enkripsi password
             $data['password'] = Hash::make($data['password']);
             //membuat pegawai
-          
+
             $pegawai = Pegawai::create(
                 [
                     'id_pegawai' => $this->generateIdPegawai(),
@@ -48,7 +48,6 @@ class AuthController extends Controller
             ]);
         }
     }
-
     private function generateIdPegawai()
     {
         $getLast = Pegawai::orderBy('id', 'desc')->first(); //  get last id
@@ -99,7 +98,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->token()->revoke();
+        $request->user()->currentAccessToken()->delete();
+
         return response()->json([
             'status' => 200,
             'success' => true,
@@ -112,9 +112,41 @@ class AuthController extends Controller
         $user = auth()->user();
 
         return response()->json([
-            'id' => $user->id_pegawai,
-            'name' => $user->name,
-            'email' => $user->email,
+            'status' => 200,
+            'success' => true,
+            'data' => $user
+        ]);
+    }
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user(); // user dari token
+
+        $data = $request->validate([
+            'name' => 'required|max:50',
+            'email' => 'required|email|unique:pegawais,email,' . $user->id,
+            'password' => 'nullable|confirmed|min:6',
+        ]);
+
+        // Update data dasar
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+
+        // Jika password diisi, update password
+        if (!empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'status' => 200,
+            'success' => true,
+            'message' => 'Profile berhasil diperbarui',
+            'data' => [
+                'id' => $user->id_pegawai,
+                'name' => $user->name,
+                'email' => $user->email,
+            ]
         ]);
     }
 }
