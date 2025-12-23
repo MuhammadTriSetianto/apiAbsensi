@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string("keterangan_izin");
             $table->enum("jenis_izin", ["sakit", "cuti", "lainnya"]);
             $table->date("tanggal_mulai")->nullable();
+            $table->date("tanggal_selesai")->nullable();
             $table->enum("status_izin", ["proses", "disetujui", "ditolak"]);
             $table->timestamps();
 

@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string("foto_absensi");
             $table->decimal("latitude");
             $table->decimal("longitude");
-
+            $table->timestamps();
+            
             $table->foreign('id_absensi')->references("id_absensi")->on("absensis")->onDelete('cascade');
         });
     }

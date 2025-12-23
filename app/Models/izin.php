@@ -9,12 +9,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Izin extends Model
 {
     use HasFactory;
-    protected $table = 'izin';
 
+    protected $table = 'izins'; // ← SESUAIKAN DENGAN DB
+    protected $primaryKey = 'id_izin'; // jika bukan id
     protected $guarded = ['id_izin'];
-    
-    public function user():BelongsTo{
-        return $this->belongsTo(pegawai::class,'id_pegawai','id_pegawai');
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(pegawai::class, 'id_pegawai', 'id_pegawai');
+    }
+
+    public function proyek(): BelongsTo
+    {
+        return $this->belongsTo(Proyek::class, 'id_proyek', 'id_proyek');
     }
     //
 }

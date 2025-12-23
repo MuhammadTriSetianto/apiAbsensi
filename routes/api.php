@@ -49,7 +49,8 @@ Route::prefix('absen')->group(function () {
     Route::get('/{id}', [AbsensisController::class, 'getMasukHariIni']);
     Route::get('/{id}/semua', [AbsensisController::class, 'getAllMasukByUser']);
     Route::put('/{id}/pulang', [AbsensisController::class, 'pulang']);
-    Route::post('/masuk/[id_proyek]', [AbsensisController::class, 'masuk']);
+    Route::post('/masuk/{id_proyek}/{id_pegawai}', [AbsensisController::class, 'masuk']);
+    Route::post('/pulang/{id_pegawai}', [AbsensisController::class, 'pulang']);
 });
 
 

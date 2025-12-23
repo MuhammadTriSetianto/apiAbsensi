@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\CekIzinAtauCutiController;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\service\CekIzinAtauCutiController as ServiceCekIzinAtauCutiController;
+use App\Http\Controllers\Service\CekIzinAtauCutiController as ServiceCekIzinAtauCutiController;
 use App\Models\Absensi;
 use App\Models\FotoAbsensi;
 use App\Models\Proyek;
@@ -15,14 +14,14 @@ use Illuminate\Support\Facades\Storage;
 
 class AbsensisController extends Controller
 {
-    public function masuk(Request $request, $id_proyek, $id_pegawai)
+    public function masuk(Request $request, $id_proyek, $id_pegawai, ServiceCekIzinAtauCutiController $izinCutiService)
     {
         // 1️Validasi request
         $request->validate([
             'id_pegawai' => 'required|exists:pegawais,id_pegawai',
             'latitude'   => 'required|numeric',
             'longitude'  => 'required|numeric',
-            'foto'       => 'required|file|mimetypes:image/jpeg,image/png' 
+            'foto'       => 'required|image|mimes:jpg,jpeg,png'
         ]);
 
         $hariIni = Carbon::today();
@@ -38,7 +37,7 @@ class AbsensisController extends Controller
 
 
         // cek status izin atau cuti from pegawai
-        $cek  = new ServiceCekIzinAtauCutiController($id_pegawai, $hariIni);
+        $cek  = $izinCutiService->cekIzinAtauCuti($id_pegawai, $hariIni);
 
         if ($cek['status']) {
             return response()->json([
@@ -73,38 +72,25 @@ class AbsensisController extends Controller
         }
 
         // 7Decode & simpan foto BASE64
-        $base64Image = $request->foto;
+        $image = $request->file('foto');
+        $namafile = $id_pegawai . '_' . now()->format('d-m-Y_H-i') . '.' . $image->extension();
 
-        if (str_contains($base64Image, 'base64,')) {
-            $base64Image = explode('base64,', $base64Image)[1];
-        }
-
-        $image = base64_decode($base64Image, true);
-
-        if (!$image) {
-            return response()->json([
-                'error' => 'Format foto tidak valid'
-            ], 422);
-        }
-
-        $fileName = 'absensi_' . time() . '.png';
-        $path = 'absensi_foto/' . $fileName;
-
-        Storage::disk('public')->put($path, $image);
-
+        $path = $request->file('foto')->storeAs('absensis', $namafile, 'public');
         // Simpan absensi
         $absen = Absensi::create([
-            'id_pegawai' => $id_pegawai,
+            'id_pegawai' => $request->id_pegawai,
             'id_proyek' => $id_proyek,
             'tanggal_absensi' => $hariIni,
             'jam_masuk' => now()->format('H:i:s'),
             'jam_pulang' => null,
-            'keterangan_absensi' => 'hadir',
+            'keterangan_absensi' => "null",
         ]);
-
+        $id_absen = Absensi::where('id_pegawai', $id_pegawai)
+            ->whereDate('tanggal_absensi', $hariIni)
+            ->first();
         //  Simpan foto absensi
         FotoAbsensi::create([
-            'id_absensi' => $absen->id_absensi,
+            'id_absensi' => $id_absen->id_absensi,
             'foto_absensi' => $path,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
@@ -116,26 +102,29 @@ class AbsensisController extends Controller
         ], 201);
     }
 
-    public function pulang(Request $request, $id_pegawai,$id_proyek)
-    {
+    public function pulang(
+        Request $request,
+        $id_pegawai,
+        ServiceCekIzinAtauCutiController $izinCutiService
+    ) {
         $request->validate([
-            'id_pegawai' => 'required|exists:pegawais,id_pegawai',
-            'latitude'   => 'required|numeric',
-            'longitude'  => 'required|numeric',
-            'foto'       => 'required|file|mimetypes:image/jpeg,image/png' // BASE64
+            'latitude'  => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'foto'      => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $hariIni = Carbon::today();
-        
-        // cek status izin atau cuti from pegawai
-        $cek  = new ServiceCekIzinAtauCutiController($id_pegawai, $hariIni);
 
+        //  Cek izin / cuti
+        $cek = $izinCutiService->cekIzinAtauCuti($id_pegawai, $hariIni);
         if ($cek['status']) {
             return response()->json([
-                'error' => $cek['message']
-            ]);
+                'success' => false,
+                'message' => $cek['message']
+            ], 403);
         }
-        // 1️Ambil absensi hari ini
+
+        //  Ambil absensi hari ini
         $absen = Absensi::where('id_pegawai', $id_pegawai)
             ->whereDate('tanggal_absensi', $hariIni)
             ->first();
@@ -147,17 +136,15 @@ class AbsensisController extends Controller
             ], 404);
         }
 
-        // 2️Cek sudah pulang atau belum
-        if ($absen->jam_pulang !== null) {
+        if ($absen->jam_pulang) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda sudah melakukan absensi pulang'
             ], 400);
         }
 
-        // 3️ Validasi GPS (ambil dari proyek)
+        //  Validasi GPS
         $proyek = Proyek::where('id_proyek', $absen->id_proyek)->firstOrFail();
-
         $jarak = $this->hitungJarak(
             $request->latitude,
             $request->longitude,
@@ -165,42 +152,32 @@ class AbsensisController extends Controller
             $proyek->long_proyek
         );
 
-        if ($jarak > 50) {
+        if ($jarak > 10) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda berada di luar radius lokasi proyek'
             ], 400);
         }
 
-        // 4️ Decode Base64 foto pulang
-        $base64Image = $request->foto;
+        //  Simpan foto pulang
+        $namafile = $id_pegawai . '_' . now()->format('Ymd_His') . '.' . $request->foto->extension();
+        $path = $request->foto->storeAs('absensi/pulang', $namafile, 'public');
 
-        if (str_contains($base64Image, 'base64,')) {
-            $base64Image = explode('base64,', $base64Image)[1];
-        }
-
-        if (!base64_decode($base64Image, true)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Format foto tidak valid'
-            ], 422);
-        }
-
-        // 5️ Update absensi
+        //  Update absensi
         $absen->update([
-            'jam_pulang' => now()->format('H:i:s')
+            'jam_pulang' => now()->format('H:i:s'),
+            'keterangan_absensi' => 'hadir'
         ]);
 
-        // 6️ Simpan foto pulang (BASE64)
-        $foto = FotoAbsensi::where('id_absensi', $absen->id_absensi)->first();
-
-        if ($foto) {
-            $foto->update([
-                'foto_pulang' => $base64Image,
+        // 🖼 Update / create foto absensi
+        FotoAbsensi::updateOrCreate(
+            ['id_absensi' => $absen->id_absensi],
+            [
+                'foto_pulang' => $path,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-            ]);
-        }
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -209,8 +186,9 @@ class AbsensisController extends Controller
                 'id_absensi' => $absen->id_absensi,
                 'jam_pulang' => $absen->jam_pulang
             ]
-        ], 200);
+        ]);
     }
+
 
 
     private function hitungJarak($lat1, $lon1, $lat2, $lon2)
