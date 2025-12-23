@@ -14,16 +14,20 @@ class UserProyeks extends Model
 
     protected $table = 'user_proyeks';
     protected $fillable = [
-        'user_id',
-        'proyek_id',
+        'id_pegawai',
+        'id_proyek',
         'jabatan',
-        'created_at'
     ];
 
 
     public function user():BelongsTo
     {
         return $this->belongsTo(pegawai::class, 'user_id', 'id_users');
+    }
+
+    public function proyek():BelongsTo
+    {
+        return $this->belongsTo(Proyek::class, 'id_proyek', 'id_proyek');
     }
     
 }

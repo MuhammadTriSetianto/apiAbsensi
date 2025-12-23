@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id('id_proyek')->primary();
             $table->string('nama_proyek',50);
             $table->string('lokasi_proyek',255);
-            $table->decimal("long_proyek")->nullable();
-            $table->decimal("lat_proyek")->nullable();
-            $table->string('deskripsi')->nullable();
+            $table->decimal("long_proyek");
+            $table->decimal("lat_proyek");
+            $table->string('deskripsi');
             $table->timestamps();
         });
     }

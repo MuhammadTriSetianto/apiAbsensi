@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string("id_pegawai")->primary();          //FK(freinger key from table users)
             $table->unsignedBigInteger("id_proyek");        //FK(freinger key from table proyeks)
             $table->string("jabatan", 20);
-            $table->dateTime('created_at');
+            $table->timestamps();
 
             $table->foreign('id_proyek')->references('id_proyek')->on('proyeks')->onDelete('cascade');
         });

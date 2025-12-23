@@ -1,19 +1,22 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Models\Izin;
 use App\Models\Absensi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-
+use App\Http\Controllers\Controller; 
 class IzinController extends Controller
 {
     public function index()
     {
+
+        $data = Izin::with('pegawai', 'proyek')->get();
+
         return response()->json([
             'success' => true,
-            'data' => Izin::latest()->get()
+            'data' => $data,    
         ], 200);
     }
 
@@ -95,7 +98,7 @@ class IzinController extends Controller
             'status_izin'     => 'sometimes|required|in:proses,disetujui,ditolak'
         ]);
 
-        // 🚫 Jika update tanggal, cek absensi ulang
+        // Jika update tanggal, cek absensi ulang
         if (isset($data['tanggal_mulai'], $data['tanggal_selesai'])) {
             $absen = Absensi::where('id_pegawai', $izin->id_pegawai)
                 ->whereBetween('tanggal', [$data['tanggal_mulai'], $data['tanggal_selesai']])

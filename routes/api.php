@@ -3,10 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProyekController;
-use App\Http\Controllers\AbsensisController;
-use App\Http\Controllers\IzinController;
-use App\Http\Controllers\CutiController;
-use App\Http\Controllers\NotifikasiController;
+use App\Http\Controllers\Api\AbsensisController;
+use App\Http\Controllers\Api\IzinController;
+use App\Http\Controllers\Api\CutiController;
+use App\Http\Controllers\Api\NotifikasiController;
+use App\Http\Controllers\Api\UserProyekController;
+;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,12 +70,12 @@ Route::prefix('izin')->group(function () {
     |--------------------------------------------------------------------------
     */
 Route::prefix('usersproyek')->group(function () {
-    Route::get('/', [IzinController::class, 'index']);
-    Route::post('/', [IzinController::class, 'store']);
-    Route::get('/{id}', [IzinController::class, 'show']);
-    Route::put('/{id}', [IzinController::class, 'update']);
-    Route::delete('/{id}', [IzinController::class, 'destroy']);
+    Route::get('/', [UserProyekController::class, 'index']);
+    Route::post('/', [UserProyekController::class, 'store']);
+    Route::get('/{idPegawai}/{idProyek}', [UserProyekController::class, 'show']);
+    Route::delete('/{idPegawai}/{idProyek}', [UserProyekController::class, 'destroy']);
 });
+
 
 /*
     |--------------------------------------------------------------------------

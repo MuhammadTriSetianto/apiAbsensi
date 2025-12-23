@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller; 
 use App\Models\Absensi;
 use App\Models\FotoAbsensi;
 use App\Models\Izin;

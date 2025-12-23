@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\Models\FotoAbsensi;
 use Illuminate\Http\Request;
-
-class FotoAbsensisController extends Controller
+use App\Http\Controllers\Controller; 
+class FotoAbsensiController extends Controller
 {
     public function index()
     {

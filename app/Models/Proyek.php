@@ -14,8 +14,8 @@ class Proyek extends Model
         'nama_proyek',
         'deskripsi',
         'lokasi_proyek',
-        'log_proyek',
-        'lng_proyek',
+        'long_proyek',
+        'lat_proyek',
     ];
     function absensis()
     {
