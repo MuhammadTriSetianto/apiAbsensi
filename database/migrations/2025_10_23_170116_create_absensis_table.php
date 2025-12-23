@@ -19,8 +19,7 @@ return new class extends Migration
             $table->time("jam_masuk");
             $table->time("jam_pulang");
             $table->string("keterangan_absensi");
-            $table->dateTime("created_at");
-            $table->dateTime("updated_at");
+            $table->timestamps();
 
             $table->foreign('id_proyek')->references("id_proyek")->on("proyeks")->onDelete('cascade');
         

@@ -46,10 +46,10 @@ Route::prefix('proyek')->group(function () {
 */
 Route::prefix('absen')->group(function () {
     Route::get('/', [AbsensisController::class, 'index']);
-    Route::get('/{id}', [AbsensisController::class, 'masuk']);
-    Route::put('/{id}', [AbsensisController::class, 'pulang']);
-    Route::delete('/{id}', [AbsensisController::class, 'destroy']);
-    Route::get('/{id}/foto', [AbsensisController::class, 'show']);
+    Route::get('/{id}', [AbsensisController::class, 'getMasukHariIni']);
+    Route::get('/{id}/semua', [AbsensisController::class, 'getAllMasukByUser']);
+    Route::put('/{id}/pulang', [AbsensisController::class, 'pulang']);
+    Route::post('/masuk/[id_proyek]', [AbsensisController::class, 'masuk']);
 });
 
 
