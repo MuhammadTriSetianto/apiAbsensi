@@ -7,23 +7,27 @@ use App\Models\Absensi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Controller; 
+use App\Http\Controllers\Controller;
 
 class CutiController extends Controller
 {
     /**
      * Simpan pengajuan cuti
      */
-    public function store(Request $request)
+
+    
+    public function store(Request $request, $id_karyawan, $id_proyek)
     {
         $request->validate([
-            'id_karyawan'       => 'required|exists:pegawais,id_pegawai',
-            'id_cuti'           => 'required|unique:cutis,id_cuti',
-            'id_proyek'         => 'required|exists:proyeks,id_proyek',
-            'tanggal_mulai'     => 'required|date',
-            'tanggal_selesai'   => 'required|date|after_or_equal:tanggal_mulai',
-            'keterangan_cuti'   => 'required|string',
+            'id_karyawan'     => 'required|exists:pegawais,id_pegawai',
+            'id_proyek'       => 'required|exists:proyeks,id_proyek', 
+            'subjek_cuti'     => 'required|string|max:255',
+            'tanggal_mulai'   => 'required|before_or_equal:tanggal_selesai',
+            'tanggal_selesai' => 'required|after_or_equal:tanggal_mulai',
+            'keterangan_cuti' => 'required|string|max:255',
+            'surat_cuti'      => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
+
 
         $tahun = Carbon::parse($request->tanggal_mulai)->year;
 
@@ -32,7 +36,7 @@ class CutiController extends Controller
             ->diffInDays(Carbon::parse($request->tanggal_selesai)) + 1;
 
         //  Ambil total cuti yang sudah disetujui tahun ini
-        $totalCutiTahunIni = Cuti::where('id_karyawan', $request->id_karyawan)
+        $totalCutiTahunIni = Cuti::where('id_karyawan', $id_karyawan)
             ->whereYear('tanggal_mulai', $tahun)
             ->where('status_cuti', 'disetujui')
             ->sum(DB::raw("DATEDIFF(tanggal_selesai, tanggal_mulai) + 1"));
@@ -43,11 +47,14 @@ class CutiController extends Controller
             ], 422);
         }
 
+        $formatTanggalMulai = Carbon::parse($request->tanggal_mulai)->format('Y-m-d');
+        $formatTanggalSelesai = Carbon::parse($request->tanggal_selesai)->format('Y-m-d');
+
         // Cek overlap cuti
-        $overlap = Cuti::where('id_karyawan', $request->id_karyawan)
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('tanggal_mulai', [$request->tanggal_mulai, $request->tanggal_selesai])
-                      ->orWhereBetween('tanggal_selesai', [$request->tanggal_mulai, $request->tanggal_selesai]);
+        $overlap = Cuti::where('id_karyawan', $id_karyawan)
+            ->where(function ($query) use ($formatTanggalMulai, $formatTanggalSelesai) {
+                $query->whereBetween('tanggal_mulai', [$formatTanggalMulai, $formatTanggalSelesai])
+                    ->orWhereBetween('tanggal_selesai', [$formatTanggalMulai, $formatTanggalSelesai]);
             })->exists();
 
         if ($overlap) {
@@ -57,8 +64,8 @@ class CutiController extends Controller
         }
 
         //  Cek apakah sudah ada absensi di rentang tanggal cuti
-        $absen = Absensi::where('id_karyawan', $request->id_karyawan)
-            ->whereBetween('tanggal', [$request->tanggal_mulai, $request->tanggal_selesai])
+        $absen = Absensi::where('id_pegawai', $id_karyawan)
+            ->whereBetween('tanggal_absensi', [$request->tanggal_mulai, $request->tanggal_selesai])
             ->exists();
 
         if ($absen) {
@@ -67,14 +74,22 @@ class CutiController extends Controller
             ], 422);
         }
 
+        $file =  $request->file('surat_cuti');
+        if ($file) {
+            $fileName = $id_proyek . '_' . $id_karyawan . '_' . now()->format('m.d.Y') . '.' . $file->extension();
+            $path = $file->storeAs('cuti', $fileName);
+        }
+
         //  Simpan cuti
         $cuti = Cuti::create([
-            'id_karyawan'     => $request->id_karyawan,
-            'id_cuti'         => $request->id_cuti,
-            'id_proyek'       => $request->id_proyek,
-            'tanggal_mulai'   => $request->tanggal_mulai,
-            'tanggal_selesai' => $request->tanggal_selesai,
+            'id_karyawan'     => $id_karyawan,
+            'id_cuti'         => $this->generateIdCuti(),
+            'id_proyek'       => $id_proyek,
+            'subjek_cuti'     => $request->subjek_cuti,
+            'tanggal_mulai'   => $formatTanggalMulai,
+            'tanggal_selesai' => $formatTanggalSelesai,
             'keterangan_cuti' => $request->keterangan_cuti,
+            'surat_cuti'      => $path,
             'status_cuti'     => 'proses',
         ]);
 
@@ -120,5 +135,12 @@ class CutiController extends Controller
         return response()->json([
             'message' => 'Cuti ditolak.'
         ]);
+    }
+
+    private function generateIdCuti()
+    {
+        $getLast = Cuti::orderBy('id', 'desc')->first(); //  get last id
+        $generateId = $getLast ? (int) substr($getLast->id_cuti, 3) + 1 : 1; // generate id
+        return 'CT-' . str_pad($generateId, 3, '0', STR_PAD_LEFT); // format id
     }
 }

@@ -23,5 +23,6 @@ class Izin extends Model
     {
         return $this->belongsTo(Proyek::class, 'id_proyek', 'id_proyek');
     }
-    //
+    
+    
 }

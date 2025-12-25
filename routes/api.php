@@ -45,7 +45,6 @@ Route::prefix('proyek')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('absen')->group(function () {
-    Route::get('/', [AbsensisController::class, 'index']);
     Route::get('/{id}', [AbsensisController::class, 'getMasukHariIni']);
     Route::get('/{id}/semua', [AbsensisController::class, 'getAllMasukByUser']);
     Route::put('/{id}/pulang', [AbsensisController::class, 'pulang']);
@@ -61,8 +60,9 @@ Route::prefix('absen')->group(function () {
 */
 Route::prefix('izin')->group(function () {
     Route::get('/', [IzinController::class, 'index']);
-    Route::post('/', [IzinController::class, 'izin']);
-    Route::get('/{id}', [IzinController::class, 'show']);
+    Route::post('/{id_proyek}/{id_pegawai}', [IzinController::class, 'requestbuatizin']);
+    Route::get('/{id_surat}/disetujui', [IzinController::class, 'disetujui']);
+    Route::get('/{id_surat}/ditolak', [IzinController::class, 'ditolak']);
     Route::delete('/{id}', [IzinController::class, 'destroy']);
 });
 /*
@@ -86,6 +86,7 @@ Route::prefix('usersproyek')->group(function () {
 Route::prefix('cuti')->group(function () {
     Route::post('/', [CutiController::class, 'store']);
     Route::put('/{id}/approve', [CutiController::class, 'approve']);
+    Route::post('/buat_cuti/{id_pegawai}/{id_proyek}', [CutiController::class, 'store']);
     Route::put('/{id}/reject', [CutiController::class, 'reject']);
 });
 

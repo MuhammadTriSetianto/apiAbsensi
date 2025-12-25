@@ -31,7 +31,7 @@ class AbsensisController extends Controller
             ->where('id_proyek', $id_proyek)
             ->exists()) {
             return response()->json([
-                'error' => 'Pegawai bukan bagian dari proyek ini'
+                'massage' => 'Pegawai bukan bagian dari proyek ini'
             ], 403);
         }
 
@@ -41,7 +41,7 @@ class AbsensisController extends Controller
 
         if ($cek['status']) {
             return response()->json([
-                'error' => $cek['message']
+                'massage' => $cek['message']
             ]);
         }
 
@@ -51,7 +51,7 @@ class AbsensisController extends Controller
             ->exists()
         ) {
             return response()->json([
-                'error' => 'Pegawai sudah melakukan absensi hari ini'
+                'massage' => 'Pegawai sudah melakukan absensi hari ini'
             ], 400);
         }
 
@@ -67,7 +67,7 @@ class AbsensisController extends Controller
 
         if ($jarak >= 10) {
             return response()->json([
-                'error' => 'Anda berada di luar radius lokasi proyek'
+                'massage' => 'Anda berada di luar radius lokasi proyek'
             ], 400);
         }
 

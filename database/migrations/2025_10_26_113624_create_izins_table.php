@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id("id_izin")->primary();
             $table->string("id_pegawai");          //FK(freinger key from table users)
             $table->unsignedBigInteger("id_proyek");        //FK(freinger key from table proyeks) 
+            $table->string("subjek_izin");
             $table->string("keterangan_izin");
             $table->enum("jenis_izin", ["sakit", "cuti", "lainnya"]);
+            $table->string("surat_izin");
             $table->date("tanggal_mulai")->nullable();
             $table->date("tanggal_selesai")->nullable();
             $table->enum("status_izin", ["proses", "disetujui", "ditolak"]);

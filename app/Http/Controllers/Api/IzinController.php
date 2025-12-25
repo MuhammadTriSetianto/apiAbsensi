@@ -2,45 +2,52 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Izin;
 use App\Models\Absensi;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller; 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+
 class IzinController extends Controller
 {
     public function index()
     {
-
         $data = Izin::with('pegawai', 'proyek')->get();
 
         return response()->json([
             'success' => true,
-            'data' => $data,    
+            'data' => $data
         ], 200);
     }
 
-    public function store(Request $request)
+    public function requestbuatizin(Request $request, $id_pegawai, $id_proyek)
     {
+        // VALIDASI INPUT
         $data = $request->validate([
-            'id_pegawai'        => 'required|exists:pegawais,id_pegawai',
-            'id_proyek'         => 'required|exists:proyeks,id_proyek',
-            'keterangan_izin'   => 'required|string',
-            'jenis_izin'        => 'required|in:sakit,lainnya',
-            'tanggal_mulai'     => 'required|date',
-            'tanggal_selesai'   => 'required|date|after_or_equal:tanggal_mulai',
+            'keterangan_izin' => 'required|string|max:255',
+            'subjek_izin' => 'required|string|max:255',
+            'suratizin' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'jenis_izin' => '|string|sometimes|in:sakit,cuti,lainnya',
+            'tanggal_mulai'   => 'required|before_or_equal:tanggal_selesai',
+            'tanggal_selesai' => 'required|after_or_equal:tanggal_mulai',
+
         ]);
 
-        // Hitung hari izin
+        // FORMAT TANGGAL
+        $formatTanggalMulai = Carbon::parse($data['tanggal_mulai'])->format('Y-m-d');
+        $formatTanggalSelesai = Carbon::parse($data['tanggal_selesai'])->format('Y-m-d');
+
+        //HITUNG JUMLAH HARI IZIN
         $jumlahHari = Carbon::parse($data['tanggal_mulai'])
             ->diffInDays(Carbon::parse($data['tanggal_selesai'])) + 1;
 
-        // Cek overlap izin
-        $overlap = Izin::where('id_pegawai', $data['id_pegawai'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('tanggal_mulai', [$data['tanggal_mulai'], $data['tanggal_selesai']])
-                  ->orWhereBetween('tanggal_selesai', [$data['tanggal_mulai'], $data['tanggal_selesai']]);
-            })->exists();
+        $overlap = Izin::where('id_pegawai', $id_pegawai)
+            ->where(function ($q) use ($formatTanggalMulai, $formatTanggalSelesai) {
+                $q->where('tanggal_mulai', '<=', $formatTanggalSelesai)
+                    ->where('tanggal_selesai', '>=', $formatTanggalMulai);
+            })
+            ->exists();
 
         if ($overlap) {
             return response()->json([
@@ -49,9 +56,9 @@ class IzinController extends Controller
             ], 422);
         }
 
-        // Cek absensi
-        $absen = Absensi::where('id_pegawai', $data['id_pegawai'])
-            ->whereBetween('tanggal', [$data['tanggal_mulai'], $data['tanggal_selesai']])
+        // CEK ABSENSI
+        $absen = Absensi::where('id_pegawai', $id_pegawai)
+            ->whereBetween('tanggal_absensi', [$data['tanggal_mulai'], $data['tanggal_selesai']])
             ->exists();
 
         if ($absen) {
@@ -61,14 +68,27 @@ class IzinController extends Controller
             ], 422);
         }
 
+        // // UPLOAD SURAT IZIN
+        if ($request->hasFile('suratizin')) {
+            $file = $request->file('suratizin');
+            $fileName = $id_pegawai . '_' . $id_proyek . '_' . now()->format('m.d.Y') . '_' . uniqid() . '.' . $file->extension();
+            $path = $file->storeAs('SuratIzin', $fileName, 'public');
+        } else {
+            $path = null;
+        }
+
+
+        // // SIMPAN KE DATABASE
         $izin = Izin::create([
-            'id_pegawai'        => $data['id_pegawai'],
-            'id_proyek'         => $data['id_proyek'],
+            'id_pegawai'        => $id_pegawai,
+            'id_proyek'         => $id_proyek,
             'keterangan_izin'   => $data['keterangan_izin'],
+            'subjek_izin'       => $data['keterangan_izin'],
             'jenis_izin'        => $data['jenis_izin'],
-            'tanggal_mulai'     => $data['tanggal_mulai'],
-            'tanggal_selesai'   => $data['tanggal_selesai'],
-            'status_izin'       => 'proses'
+            'surat_izin'         => $path,
+            'tanggal_mulai'     => $formatTanggalMulai,
+            'tanggal_selesai'   => $formatTanggalSelesai,
+            'status_izin'       => 'proses',
         ]);
 
         return response()->json([
@@ -78,56 +98,57 @@ class IzinController extends Controller
         ], 201);
     }
 
+
     public function show($id)
     {
         return response()->json([
             'success' => true,
-            'data' => Izin::findOrFail($id)
-        ]);
+            'data' => Izin::with('pegawai', 'proyek')->findOrFail($id)
+        ], 200);
     }
 
-    public function update(Request $request, $id)
+    public function disetujui($id)
     {
         $izin = Izin::findOrFail($id);
 
-        $data = $request->validate([
-            'keterangan_izin' => 'sometimes|required|string',
-            'jenis_izin'      => 'sometimes|required|in:sakit,lainnya',
-            'tanggal_mulai'   => 'sometimes|required|date',
-            'tanggal_selesai' => 'sometimes|required|date|after_or_equal:tanggal_mulai',
-            'status_izin'     => 'sometimes|required|in:proses,disetujui,ditolak'
+        $izin->update([
+            'status_izin' => 'disetujui'
         ]);
-
-        // Jika update tanggal, cek absensi ulang
-        if (isset($data['tanggal_mulai'], $data['tanggal_selesai'])) {
-            $absen = Absensi::where('id_pegawai', $izin->id_pegawai)
-                ->whereBetween('tanggal', [$data['tanggal_mulai'], $data['tanggal_selesai']])
-                ->exists();
-
-            if ($absen) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tanggal izin bertabrakan dengan absensi.'
-                ], 422);
-            }
-        }
-
-        $izin->update($data);
 
         return response()->json([
             'success' => true,
             'message' => 'Data izin berhasil diperbarui.',
             'data' => $izin
+        ], 200);
+    }
+    public function ditolak($id)
+    {
+        $izin = Izin::findOrFail($id);
+
+        $izin->update([
+            'status_izin' => 'ditolak'
         ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data izin berhasil diperbarui.',
+            'data' => $izin
+        ], 200);
     }
 
     public function destroy($id)
     {
-        Izin::findOrFail($id)->delete();
+        $izin = Izin::findOrFail($id);
+
+        if ($izin->suratizin) {
+            Storage::disk('public')->delete($izin->suratizin);
+        }
+
+        $izin->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Data izin berhasil dihapus.'
-        ]);
+        ], 200);
     }
 }
