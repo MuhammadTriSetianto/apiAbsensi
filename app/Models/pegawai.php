@@ -13,10 +13,12 @@ class Pegawai extends Authenticatable
     use HasApiTokens, HasFactory;
 
     protected $table = 'pegawais';
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'id_pegawai';
     public $timestamps = true;
+    public $incrementing = false;  
+    protected $keyType = 'string';  
 
-    protected $fillable = ['name', 'email', 'password',"id_pegawai","jabatan"];
+    protected $fillable = ['name', 'email', "no_hp", 'password', "id_pegawai", "jabatan"];
 
     public function user_proyeks(): HasMany
     {

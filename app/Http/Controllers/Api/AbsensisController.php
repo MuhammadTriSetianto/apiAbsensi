@@ -5,59 +5,51 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Service\CekIzinAtauCutiController as ServiceCekIzinAtauCutiController;
 use App\Models\Absensi;
+use App\Models\Cuti;
 use App\Models\FotoAbsensi;
+use App\Models\Izin;
 use App\Models\Proyek;
 use App\Models\UserProyeks;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+
 
 class AbsensisController extends Controller
 {
     public function masuk(Request $request, $id_proyek, $id_pegawai, ServiceCekIzinAtauCutiController $izinCutiService)
     {
-        // 1️Validasi request
         $request->validate([
-            'id_pegawai' => 'required|exists:pegawais,id_pegawai',
-            'latitude'   => 'required|numeric',
-            'longitude'  => 'required|numeric',
-            'foto'       => 'required|image|mimes:jpg,jpeg,png'
+            'latitude'  => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'foto'      => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        $user = auth('sanctum')->user();
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan'], 401);
+        }
 
         $hariIni = Carbon::today();
 
-        // 2Cek pegawai terdaftar di proyek
-        if (!UserProyeks::where('id_pegawai', $id_pegawai)
-            ->where('id_proyek', $id_proyek)
-            ->exists()) {
-            return response()->json([
-                'massage' => 'Pegawai bukan bagian dari proyek ini'
-            ], 403);
+        // Pegawai terdaftar di proyek
+        if (!UserProyeks::where('id_pegawai', $id_pegawai)->where('id_proyek', $id_proyek)->exists()) {
+            return response()->json(['message' => 'Pegawai bukan bagian dari proyek ini'], 403);
         }
 
-
-        // cek status izin atau cuti from pegawai
-        $cek  = $izinCutiService->cekIzinAtauCuti($id_pegawai, $hariIni);
-
+        // Cek izin / cuti
+        $cek = $izinCutiService->cekIzinAtauCuti($id_pegawai, $hariIni);
         if ($cek['status']) {
-            return response()->json([
-                'massage' => $cek['message']
-            ]);
+            return response()->json(['message' => $cek['message']], 403);
         }
 
-        // 5Cek absensi hari ini
-        if (Absensi::where('id_pegawai', $id_pegawai)
-            ->whereDate('tanggal_absensi', $hariIni)
-            ->exists()
-        ) {
-            return response()->json([
-                'massage' => 'Pegawai sudah melakukan absensi hari ini'
-            ], 400);
+        // Cek absensi hari ini
+        if (Absensi::where('id_pegawai', $id_pegawai)->whereDate('tanggal_absensi', $hariIni)->exists()) {
+            return response()->json(['message' => 'Pegawai sudah absen hari ini'], 400);
         }
 
-        // Validasi GPS
+        // Validasi lokasi
         $proyek = Proyek::where('id_proyek', $id_proyek)->firstOrFail();
-
         $jarak = $this->hitungJarak(
             $request->latitude,
             $request->longitude,
@@ -65,32 +57,25 @@ class AbsensisController extends Controller
             $proyek->long_proyek
         );
 
-        if ($jarak >= 10) {
-            return response()->json([
-                'massage' => 'Anda berada di luar radius lokasi proyek'
-            ], 400);
+        if ($jarak > 10) {
+            return response()->json(['message' => 'Di luar radius proyek'], 400);
         }
 
-        // 7Decode & simpan foto BASE64
-        $image = $request->file('foto');
-        $namafile = $id_pegawai . '_' . now()->format('d-m-Y_H-i') . '.' . $image->extension();
+        // Upload foto
+        $fileName = $id_pegawai . '_' . now()->format('Ymd_His') . '.' . $request->foto->extension();
+        $path = $request->foto->storeAs('absensi/masuk', $fileName, 'public');
 
-        $path = $request->file('foto')->storeAs('absensis', $namafile, 'public');
         // Simpan absensi
         $absen = Absensi::create([
-            'id_pegawai' => $request->id_pegawai,
+            'id_pegawai' => $id_pegawai,
             'id_proyek' => $id_proyek,
             'tanggal_absensi' => $hariIni,
             'jam_masuk' => now()->format('H:i:s'),
-            'jam_pulang' => null,
-            'keterangan_absensi' => "null",
+            'keterangan_absensi' => null,
         ]);
-        $id_absen = Absensi::where('id_pegawai', $id_pegawai)
-            ->whereDate('tanggal_absensi', $hariIni)
-            ->first();
-        //  Simpan foto absensi
+
         FotoAbsensi::create([
-            'id_absensi' => $id_absen->id_absensi,
+            'id_absensi' => $absen->id_absensi,
             'foto_absensi' => $path,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
@@ -102,11 +87,14 @@ class AbsensisController extends Controller
         ], 201);
     }
 
+
     public function pulang(
         Request $request,
         $id_pegawai,
         ServiceCekIzinAtauCutiController $izinCutiService
     ) {
+        $user = auth('sanctum')->user();
+
         $request->validate([
             'latitude'  => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -204,10 +192,11 @@ class AbsensisController extends Controller
         return $R * (2 * atan2(sqrt($a), sqrt(1 - $a)));
     }
 
-    public function getMasukHariIni($id_pegawai)
+    public function getMasukHariIni()
     {
+        $user = auth('sanctum')->user();
         $hariIni = Carbon::today();
-
+        $id_pegawai = $user->id_pegawai;
         $absensi = Absensi::with('foto')
             ->where('id_pegawai', $id_pegawai)
             ->whereDate('tanggal_absensi', $hariIni)
@@ -238,38 +227,45 @@ class AbsensisController extends Controller
         ], 200);
     }
 
-    public function getAllMasukByUser($id_pegawai)
+
+
+    public function getAllMasukByUser()
     {
-        $data = Absensi::with('foto')
-            ->where('id_pegawai', $id_pegawai)
-            ->whereNotNull('jam_masuk')
+        $user = auth('sanctum')->user();
+        $thisMonth = Carbon::now();
+
+        $absensi = Absensi::with(['fotoAbsensi', 'pegawai', 'proyek'])
+            ->where('id_pegawai', $user->id_pegawai)
+            ->where('keterangan_absensi', 'hadir')
+            ->whereBetween(
+                'tanggal_absensi',
+                [
+                    $thisMonth->copy()->startOfMonth(),
+                    $thisMonth->copy()->endOfMonth(),
+                ]
+            )
             ->orderBy('tanggal_absensi', 'desc')
             ->get();
 
-        if ($data->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data absensi masuk tidak ditemukan'
-            ], 404);
-        }
+        $izin = Izin::with(['user', 'proyek'])
+        ->where('id_pegawai', $user->id_pegawai)
+        ->where('status_izin', 'disetujui')
+        ->whereMonth('tanggal_mulai', $thisMonth->month)
+        ->whereYear('tanggal_mulai', $thisMonth->year)
+        ->orderBy('tanggal_mulai', 'desc')
+        ->get();
+
+        $totalCuti = Cuti::where('id_karyawan', $user->id_pegawai)
+            ->where('status_cuti', 'disetujui')
+            ->sum(DB::raw("DATEDIFF(tanggal_selesai, tanggal_mulai) + 1"));
+
 
         return response()->json([
             'success' => true,
-            'data' => $data->map(function ($absen) {
-                return [
-                    'id_absensi' => $absen->id_absensi,
-                    'id_pegawai' => $absen->id_pegawai,
-                    'id_proyek' => $absen->id_proyek,
-                    'tanggal_absensi' => $absen->tanggal_absensi,
-                    'jam_masuk' => $absen->jam_masuk,
-                    'keterangan_absensi' => $absen->keterangan_absensi,
-                    'foto' => $absen->foto
-                        ? 'data:image/png;base64,' . $absen->foto->foto_absensi
-                        : null,
-                    'latitude' => $absen->foto->latitude ?? null,
-                    'longitude' => $absen->foto->longitude ?? null,
-                ];
-            })
-        ], 200);
+            'absensi' => $absensi,
+            'izin' => $izin,
+            'total_cuti' => $totalCuti,
+            'message' => 'Data absensi berhasil diambil'
+        ]);
     }
 }

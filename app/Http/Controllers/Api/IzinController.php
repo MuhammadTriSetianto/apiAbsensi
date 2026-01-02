@@ -28,12 +28,18 @@ class IzinController extends Controller
             'keterangan_izin' => 'required|string|max:255',
             'subjek_izin' => 'required|string|max:255',
             'suratizin' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'jenis_izin' => '|string|sometimes|in:sakit,cuti,lainnya',
+            'jenis_izin' => '|string|sometimes|in:sakit,lainnya',
             'tanggal_mulai'   => 'required|before_or_equal:tanggal_selesai',
             'tanggal_selesai' => 'required|after_or_equal:tanggal_mulai',
 
         ]);
-
+        $user = auth('sanctum')->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 401);
+        }
         // FORMAT TANGGAL
         $formatTanggalMulai = Carbon::parse($data['tanggal_mulai'])->format('Y-m-d');
         $formatTanggalSelesai = Carbon::parse($data['tanggal_selesai'])->format('Y-m-d');
@@ -76,9 +82,6 @@ class IzinController extends Controller
         } else {
             $path = null;
         }
-
-
-        // // SIMPAN KE DATABASE
         $izin = Izin::create([
             'id_pegawai'        => $id_pegawai,
             'id_proyek'         => $id_proyek,
@@ -151,4 +154,43 @@ class IzinController extends Controller
             'message' => 'Data izin berhasil dihapus.'
         ], 200);
     }
+
+    public function getAllIzinByUser()
+{
+    $user = auth('sanctum')->user();
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak terautentikasi'
+        ], 401);
+    }
+
+    $id_pegawai = $user->id_pegawai;
+    $thisMonth = Carbon::now();
+
+    $data = Izin::with(['user', 'proyek'])
+        ->where('id_pegawai', $id_pegawai)
+        ->where('status_izin', 'disetujui')
+        ->whereMonth('tanggal_mulai', $thisMonth->month)
+        ->whereYear('tanggal_mulai', $thisMonth->year)
+        ->orderBy('tanggal_mulai', 'desc')
+        ->get();
+
+    // if ($data->isEmpty()) {
+    //     return response()->json([
+    //         'success' => false,
+    //         'message' => 'Belum ada izin yang disetujui pada bulan ini',
+    //         'data' => []
+    //     ], 200);
+    // }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data izin berhasil diambil',
+        'total' => $data->count(),
+        'data' => $data
+    ], 200);
+}
+
 }

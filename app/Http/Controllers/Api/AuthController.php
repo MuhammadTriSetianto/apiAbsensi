@@ -109,7 +109,7 @@ class AuthController extends Controller
 
     public function profile()
     {
-        $user = auth()->user();
+        $user = auth('sanctum')->user();
 
         return response()->json([
             'status' => 200,
@@ -123,13 +123,14 @@ class AuthController extends Controller
 
         $data = $request->validate([
             'name' => 'required|max:50',
+            'no_hp' => 'required',
             'email' => 'required|email|unique:pegawais,email,' . $user->id,
-            'password' => 'nullable|confirmed|min:6',
         ]);
 
         // Update data dasar
         $user->name = $data['name'];
         $user->email = $data['email'];
+        $user->no_hp = $data['no_hp'];
 
         // Jika password diisi, update password
         if (!empty($data['password'])) {

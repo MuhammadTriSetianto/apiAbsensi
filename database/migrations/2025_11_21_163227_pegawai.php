@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('id_pegawai',10)->unique();
             $table->string('name',50);
             $table->string('email')->unique();
+            $table->string('no_hp')->nullable();
+            $table->string('alamat')->nullable();
             $table->unsignedBigInteger('id_role')->default(3);
             $table->string('password');
             $table->string('jabatan')->nullable();

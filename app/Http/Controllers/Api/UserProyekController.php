@@ -1,16 +1,18 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Models\UserProyeks;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller; 
+use App\Http\Controllers\Controller;
+
 class UserProyekController extends Controller
 {
     public function index()
     {
 
         $data = UserProyeks::with('user', 'proyek')->get();
-        
+
         return response()->json([
             'massage' => 'data proyek telah di dapat',
             'data' => $data,
@@ -26,6 +28,14 @@ class UserProyekController extends Controller
             'jabatan' => 'required|string|max:20',
         ]);
 
+        $perkerja = UserProyeks::where('id_pegawai', $request->id_pegawai)->exists();
+
+        if ($perkerja) {
+            return response()->json([
+                'message' => 'Pegawai sudah terdaftar di salah satu proyek lain',
+                'status' => 403
+            ]);
+        }
         $data = UserProyeks::create([
             'id_pegawai' => $request->id_pegawai,
             'id_proyek' => $request->id_proyek,
@@ -40,7 +50,7 @@ class UserProyekController extends Controller
     }
 
 
-        public function upadate(Request $request)
+    public function upadate(Request $request)
     {
         $request->validate([
             'id_pegawai' => 'required|exists:pegawais,id_pegawai',
@@ -56,25 +66,24 @@ class UserProyekController extends Controller
 
         return response()->json([
             'data' => $data,
-            'status' => 201
-
+            'status' => 201,
+            'message' => 'Data berhasil di update'
         ]);
     }
-    
-public function show($idPegawai, $idProyek)
-{
-    return UserProyeks::where('id_pegawai', $idPegawai)
-        ->where('id_proyek', $idProyek)
-        ->firstOrFail();
-}
 
-public function destroy($idPegawai, $idProyek)
-{
-    UserProyeks::where('id_pegawai', $idPegawai)
-        ->where('id_proyek', $idProyek)
-        ->delete();
+    public function show($idPegawai, $idProyek)
+    {
+        return UserProyeks::where('id_pegawai', $idPegawai)
+            ->where('id_proyek', $idProyek)
+            ->firstOrFail();
+    }
 
-    return response()->json(['message' => 'Deleted']);
-}
+    public function destroy($idPegawai, $idProyek)
+    {
+        UserProyeks::where('id_pegawai', $idPegawai)
+            ->where('id_proyek', $idProyek)
+            ->delete();
 
+        return response()->json(['message' => 'Deleted']);
+    }
 }

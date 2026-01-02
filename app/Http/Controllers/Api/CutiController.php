@@ -15,12 +15,12 @@ class CutiController extends Controller
      * Simpan pengajuan cuti
      */
 
-    
+
     public function store(Request $request, $id_karyawan, $id_proyek)
     {
         $request->validate([
             'id_karyawan'     => 'required|exists:pegawais,id_pegawai',
-            'id_proyek'       => 'required|exists:proyeks,id_proyek', 
+            'id_proyek'       => 'required|exists:proyeks,id_proyek',
             'subjek_cuti'     => 'required|string|max:255',
             'tanggal_mulai'   => 'required|before_or_equal:tanggal_selesai',
             'tanggal_selesai' => 'required|after_or_equal:tanggal_mulai',
@@ -28,7 +28,13 @@ class CutiController extends Controller
             'surat_cuti'      => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
-
+        $user = auth('sanctum')->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 401);
+        }
         $tahun = Carbon::parse($request->tanggal_mulai)->year;
 
         //  Hitung jumlah hari cuti (inklusif)
@@ -136,6 +142,21 @@ class CutiController extends Controller
             'message' => 'Cuti ditolak.'
         ]);
     }
+
+    public function totalCuti()
+    {
+        $user = auth('sanctum')->user();
+
+        $totalCuti = Cuti::where('id_karyawan', $user->id_pegawai)
+            ->where('status_cuti', 'disetujui')
+            ->sum(DB::raw("DATEDIFF(tanggal_selesai, tanggal_mulai) + 1"));
+
+        return response()->json([
+            'total_cuti' => $totalCuti,
+            'message' => 'Total cuti berhasil diambil',
+        ]);
+    }
+
 
     private function generateIdCuti()
     {
