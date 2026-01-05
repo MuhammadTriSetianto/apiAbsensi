@@ -20,9 +20,9 @@ class UserProyeks extends Model
     ];
 
 
-    public function user():BelongsTo
+    public function pegawai():BelongsTo
     {
-        return $this->belongsTo(pegawai::class, 'user_id', 'id_users');
+        return $this->belongsTo(Pegawai::class, 'id_pegawai', 'id_pegawai');
     }
 
     public function proyek():BelongsTo

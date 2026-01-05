@@ -11,7 +11,7 @@ class UserProyekController extends Controller
     public function index()
     {
 
-        $data = UserProyeks::with('user', 'proyek')->get();
+        $data = UserProyeks::with('pegawai', 'proyek')->get();
 
         return response()->json([
             'massage' => 'data proyek telah di dapat',
@@ -71,17 +71,32 @@ class UserProyekController extends Controller
         ]);
     }
 
-    public function show($idPegawai, $idProyek)
-    {
-        return UserProyeks::where('id_pegawai', $idPegawai)
-            ->where('id_proyek', $idProyek)
-            ->firstOrFail();
-    }
+   public function show()
+{
+    $user = auth('sanctum')->user();
 
-    public function destroy($idPegawai, $idProyek)
+    $data = UserProyeks::with(['pegawai', 'proyek'])
+        ->where('id_pegawai', $user->id_pegawai)
+        ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => $data,
+    ]);
+}
+
+
+
+    public function destroyAll($idProyek)
     {
-        UserProyeks::where('id_pegawai', $idPegawai)
-            ->where('id_proyek', $idProyek)
+        UserProyeks::where('id_proyek', $idProyek)
+            ->delete();
+
+        return response()->json(['message' => 'Deleted']);
+    }
+    public function destroy($idPegawai)
+    {
+        UserProyeks::where('id_proyek', $idPegawai)
             ->delete();
 
         return response()->json(['message' => 'Deleted']);

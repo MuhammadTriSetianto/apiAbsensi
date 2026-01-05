@@ -16,10 +16,9 @@ class CutiController extends Controller
      */
 
 
-    public function store(Request $request, $id_karyawan, $id_proyek)
+    public function store(Request $request,)
     {
         $request->validate([
-            'id_karyawan'     => 'required|exists:pegawais,id_pegawai',
             'id_proyek'       => 'required|exists:proyeks,id_proyek',
             'subjek_cuti'     => 'required|string|max:255',
             'tanggal_mulai'   => 'required|before_or_equal:tanggal_selesai',
@@ -42,7 +41,7 @@ class CutiController extends Controller
             ->diffInDays(Carbon::parse($request->tanggal_selesai)) + 1;
 
         //  Ambil total cuti yang sudah disetujui tahun ini
-        $totalCutiTahunIni = Cuti::where('id_karyawan', $id_karyawan)
+        $totalCutiTahunIni = Cuti::where('id_karyawan', $user->id_pegawai)
             ->whereYear('tanggal_mulai', $tahun)
             ->where('status_cuti', 'disetujui')
             ->sum(DB::raw("DATEDIFF(tanggal_selesai, tanggal_mulai) + 1"));
@@ -57,7 +56,7 @@ class CutiController extends Controller
         $formatTanggalSelesai = Carbon::parse($request->tanggal_selesai)->format('Y-m-d');
 
         // Cek overlap cuti
-        $overlap = Cuti::where('id_karyawan', $id_karyawan)
+        $overlap = Cuti::where('id_karyawan', $user->id_pegawai)
             ->where(function ($query) use ($formatTanggalMulai, $formatTanggalSelesai) {
                 $query->whereBetween('tanggal_mulai', [$formatTanggalMulai, $formatTanggalSelesai])
                     ->orWhereBetween('tanggal_selesai', [$formatTanggalMulai, $formatTanggalSelesai]);
@@ -70,7 +69,7 @@ class CutiController extends Controller
         }
 
         //  Cek apakah sudah ada absensi di rentang tanggal cuti
-        $absen = Absensi::where('id_pegawai', $id_karyawan)
+        $absen = Absensi::where('id_pegawai', $user->id_pegawai)
             ->whereBetween('tanggal_absensi', [$request->tanggal_mulai, $request->tanggal_selesai])
             ->exists();
 
@@ -82,15 +81,15 @@ class CutiController extends Controller
 
         $file =  $request->file('surat_cuti');
         if ($file) {
-            $fileName = $id_proyek . '_' . $id_karyawan . '_' . now()->format('m.d.Y') . '.' . $file->extension();
+            $fileName = $request->id_proyek . '_' . $user->id_pegawai . '_' . now()->format('m.d.Y') . '.' . $file->extension();
             $path = $file->storeAs('cuti', $fileName);
         }
 
         //  Simpan cuti
         $cuti = Cuti::create([
-            'id_karyawan'     => $id_karyawan,
+            'id_karyawan'     => $user->id_pegawai,
             'id_cuti'         => $this->generateIdCuti(),
-            'id_proyek'       => $id_proyek,
+            'id_proyek'       => $request->id_proyek,
             'subjek_cuti'     => $request->subjek_cuti,
             'tanggal_mulai'   => $formatTanggalMulai,
             'tanggal_selesai' => $formatTanggalSelesai,

@@ -20,7 +20,7 @@ class ProyekController extends Controller
 
     public function show($id)
     {
-        $proyek = Proyek::find($id);
+        $proyek = Proyek::findOrFail($id);
         return response()->json([
             'status' => 200,
             'success' => true,

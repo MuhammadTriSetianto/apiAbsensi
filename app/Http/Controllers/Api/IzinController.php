@@ -21,10 +21,11 @@ class IzinController extends Controller
         ], 200);
     }
 
-    public function requestbuatizin(Request $request, $id_pegawai, $id_proyek)
+    public function requestbuatizin(Request $request,)
     {
         // VALIDASI INPUT
         $data = $request->validate([
+            'id_proyek' => 'required|exists:proyeks,id_proyek',
             'keterangan_izin' => 'required|string|max:255',
             'subjek_izin' => 'required|string|max:255',
             'suratizin' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
@@ -48,7 +49,7 @@ class IzinController extends Controller
         $jumlahHari = Carbon::parse($data['tanggal_mulai'])
             ->diffInDays(Carbon::parse($data['tanggal_selesai'])) + 1;
 
-        $overlap = Izin::where('id_pegawai', $id_pegawai)
+        $overlap = Izin::where('id_pegawai', $user->id_pegawai)
             ->where(function ($q) use ($formatTanggalMulai, $formatTanggalSelesai) {
                 $q->where('tanggal_mulai', '<=', $formatTanggalSelesai)
                     ->where('tanggal_selesai', '>=', $formatTanggalMulai);
@@ -63,7 +64,7 @@ class IzinController extends Controller
         }
 
         // CEK ABSENSI
-        $absen = Absensi::where('id_pegawai', $id_pegawai)
+        $absen = Absensi::where('id_pegawai', $user->id_pegawai)
             ->whereBetween('tanggal_absensi', [$data['tanggal_mulai'], $data['tanggal_selesai']])
             ->exists();
 
@@ -77,14 +78,14 @@ class IzinController extends Controller
         // // UPLOAD SURAT IZIN
         if ($request->hasFile('suratizin')) {
             $file = $request->file('suratizin');
-            $fileName = $id_pegawai . '_' . $id_proyek . '_' . now()->format('m.d.Y') . '_' . uniqid() . '.' . $file->extension();
+            $fileName = $user->id_pegawai . '_' . $request->id_proyek . '_' . now()->format('m.d.Y') . '_' . uniqid() . '.' . $file->extension();
             $path = $file->storeAs('SuratIzin', $fileName, 'public');
         } else {
             $path = null;
         }
         $izin = Izin::create([
-            'id_pegawai'        => $id_pegawai,
-            'id_proyek'         => $id_proyek,
+            'id_pegawai'        => $user->id_pegawai,
+            'id_proyek'         => $request->id_proyek,
             'keterangan_izin'   => $data['keterangan_izin'],
             'subjek_izin'       => $data['keterangan_izin'],
             'jenis_izin'        => $data['jenis_izin'],
@@ -154,43 +155,4 @@ class IzinController extends Controller
             'message' => 'Data izin berhasil dihapus.'
         ], 200);
     }
-
-    public function getAllIzinByUser()
-{
-    $user = auth('sanctum')->user();
-
-    if (!$user) {
-        return response()->json([
-            'success' => false,
-            'message' => 'User tidak terautentikasi'
-        ], 401);
-    }
-
-    $id_pegawai = $user->id_pegawai;
-    $thisMonth = Carbon::now();
-
-    $data = Izin::with(['user', 'proyek'])
-        ->where('id_pegawai', $id_pegawai)
-        ->where('status_izin', 'disetujui')
-        ->whereMonth('tanggal_mulai', $thisMonth->month)
-        ->whereYear('tanggal_mulai', $thisMonth->year)
-        ->orderBy('tanggal_mulai', 'desc')
-        ->get();
-
-    // if ($data->isEmpty()) {
-    //     return response()->json([
-    //         'success' => false,
-    //         'message' => 'Belum ada izin yang disetujui pada bulan ini',
-    //         'data' => []
-    //     ], 200);
-    // }
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Data izin berhasil diambil',
-        'total' => $data->count(),
-        'data' => $data
-    ], 200);
-}
-
 }

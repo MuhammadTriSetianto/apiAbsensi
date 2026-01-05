@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('no_hp')->nullable();
             $table->string('alamat')->nullable();
+            $table->string('image')->nullable();
             $table->unsignedBigInteger('id_role')->default(3);
             $table->string('password');
             $table->string('jabatan')->nullable();

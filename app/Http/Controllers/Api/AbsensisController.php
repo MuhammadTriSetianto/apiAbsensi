@@ -17,18 +17,21 @@ use Illuminate\Http\Request;
 
 class AbsensisController extends Controller
 {
-    public function masuk(Request $request, $id_proyek, $id_pegawai, ServiceCekIzinAtauCutiController $izinCutiService)
+    public function masuk(Request $request, ServiceCekIzinAtauCutiController $izinCutiService)
     {
         $request->validate([
             'latitude'  => 'required|numeric',
             'longitude' => 'required|numeric',
             'foto'      => 'required|image|mimes:jpg,jpeg,png|max:2048',
+
         ]);
 
         $user = auth('sanctum')->user();
         if (!$user) {
             return response()->json(['message' => 'User tidak ditemukan'], 401);
         }
+        $id_proyek = UserProyeks::where('id_pegawai', $user->id_pegawai)->value('id_proyek');
+        $id_pegawai = $user->id_pegawai;
 
         $hariIni = Carbon::today();
 
@@ -71,7 +74,7 @@ class AbsensisController extends Controller
             'id_proyek' => $id_proyek,
             'tanggal_absensi' => $hariIni,
             'jam_masuk' => now()->format('H:i:s'),
-            'keterangan_absensi' => null,
+            'keterangan_absensi' => 'null',
         ]);
 
         FotoAbsensi::create([
@@ -90,7 +93,6 @@ class AbsensisController extends Controller
 
     public function pulang(
         Request $request,
-        $id_pegawai,
         ServiceCekIzinAtauCutiController $izinCutiService
     ) {
         $user = auth('sanctum')->user();
@@ -100,6 +102,11 @@ class AbsensisController extends Controller
             'longitude' => 'required|numeric',
             'foto'      => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        if (!$user) {
+            return response()->json(['message' => 'User harus login'], 401);
+        }
+        $id_pegawai = $user->id_pegawai;
 
         $hariIni = Carbon::today();
 
@@ -248,12 +255,12 @@ class AbsensisController extends Controller
             ->get();
 
         $izin = Izin::with(['user', 'proyek'])
-        ->where('id_pegawai', $user->id_pegawai)
-        ->where('status_izin', 'disetujui')
-        ->whereMonth('tanggal_mulai', $thisMonth->month)
-        ->whereYear('tanggal_mulai', $thisMonth->year)
-        ->orderBy('tanggal_mulai', 'desc')
-        ->get();
+            ->where('id_pegawai', $user->id_pegawai)
+            ->where('status_izin', 'disetujui')
+            ->whereMonth('tanggal_mulai', $thisMonth->month)
+            ->whereYear('tanggal_mulai', $thisMonth->year)
+            ->orderBy('tanggal_mulai', 'desc')
+            ->get();
 
         $totalCuti = Cuti::where('id_karyawan', $user->id_pegawai)
             ->where('status_cuti', 'disetujui')
