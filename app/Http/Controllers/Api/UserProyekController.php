@@ -31,7 +31,7 @@ class UserProyekController extends Controller
         $perkerja = UserProyeks::where('id_proyek', $request->id_proyek)->exists();
 
         if ($perkerja) {
-            return response()->json([
+            return response()->json([ 
                 'message' => 'Pegawai sudah terdaftar di salah satu proyek ini',
                 'status' => 403
             ]);
