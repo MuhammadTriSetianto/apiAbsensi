@@ -8,6 +8,7 @@ use App\Models\Absensi;
 use App\Models\Cuti;
 use App\Models\FotoAbsensi;
 use App\Models\Izin;
+use App\Models\Pegawai;
 use App\Models\Proyek;
 use App\Models\UserProyeks;
 use Carbon\Carbon;
@@ -273,6 +274,36 @@ class AbsensisController extends Controller
             'izin' => $izin,
             'total_cuti' => $totalCuti,
             'message' => 'Data absensi berhasil diambil'
+        ]);
+    }
+
+    public function index()
+    {
+        // Gunakan bulan dan tahun sekarang
+        $bulan = Carbon::now()->month;
+        $tahun = Carbon::now()->year;
+
+        $start = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth();
+        $end = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
+
+        // Ambil semua pegawai + jumlah absensi hadir di bulan sekarang
+        $pegawai = Pegawai::withCount(['absensi as jumlah_masuk' => function ($query) use ($start, $end) {
+            $query->where('keterangan_absensi', 'hadir') // hanya hitung yang hadir
+                ->whereBetween('tanggal_absensi', [$start, $end]);
+        }])->get(['id_pegawai', 'name']); // ambil kode & nama
+
+        // Format JSON untuk Excel
+        $laporan = $pegawai->map(function ($p) {
+            return [
+                'Id_pegawai' => $p->id_pegawai,
+                'Nama' => $p->name,
+                'Jumlah_Masuk' => $p->jumlah_masuk ?? 0,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $laporan
         ]);
     }
 }

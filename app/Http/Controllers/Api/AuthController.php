@@ -160,4 +160,14 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    public function index () {
+        $pegawai = Pegawai::all();
+
+        return response()->json([
+            'status'=> 200,
+            'data' => $pegawai,
+            'success' => true,
+        ]);
+    }
 }

@@ -17,9 +17,9 @@ use App\Http\Controllers\Api\UserProyekController;;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/users', [AuthController::class, 'index']);
 Route::post('/updatePegawai', [AuthController::class, 'updateProfile']);
 Route::middleware('auth:sanctum')->group(function () {
-
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
@@ -36,6 +36,7 @@ Route::prefix('proyek')->group(function () {
     Route::get('/{id}', [ProyekController::class, 'show']);
     Route::post('/', [ProyekController::class, 'create_project']);
     Route::put('/{id}', [ProyekController::class, 'update_project']);
+    Route::delete('/delete_proyek/{id}', [ProyekController::class, 'delete_project']);
 });
 
 /*
@@ -49,6 +50,7 @@ Route::prefix('absen')->group(function () {
     Route::put('/user/pulang', [AbsensisController::class, 'pulang']);
     Route::post('/user/masuk', [AbsensisController::class, 'masuk']);
     Route::post('/pulang/{id_pegawai}', [AbsensisController::class, 'pulang']);
+    Route::get('/laporan', [AbsensisController::class, 'index']);
 });
 
 
@@ -59,7 +61,7 @@ Route::prefix('absen')->group(function () {
 */
 Route::prefix('izin')->group(function () {
     Route::get('/', [IzinController::class, 'index']);
-    Route ::get('/user', [IzinController::class, 'getAllIzinByUser']);
+    Route::get('/user', [IzinController::class, 'getAllIzinByUser']);
     Route::post('/kerja', [IzinController::class, 'requestbuatizin']);
     Route::post('/{id_surat}/disetujui', [IzinController::class, 'disetujui']);
     Route::post('/{id_surat}/ditolak', [IzinController::class, 'ditolak']);
@@ -85,11 +87,11 @@ Route::prefix('usersproyek')->group(function () {
     |--------------------------------------------------------------------------
     */
 Route::prefix('cuti')->group(function () {
-    Route::post('/', [CutiController::class, 'store']);
+    Route::get('/getall', [CutiController::class, 'index']);
     Route::get('/totalcuti/user', [CutiController::class, 'totalCuti']);
     Route::put('/{id}/approve', [CutiController::class, 'approve']);
-    Route::post('/buat_cuti', [CutiController::class, 'store']);
     Route::put('/{id}/reject', [CutiController::class, 'reject']);
+    Route::post('/buat_cuti', [CutiController::class, 'store']);
 });
 
 /*

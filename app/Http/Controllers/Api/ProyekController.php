@@ -20,7 +20,7 @@ class ProyekController extends Controller
 
     public function show($id)
     {
-        $proyek = Proyek::findOrFail($id);
+        $proyek = Proyek::where('id_proyek', $id)->get();
         return response()->json([
             'status' => 200,
             'success' => true,
@@ -37,8 +37,8 @@ class ProyekController extends Controller
             'log_proyek'    => 'required|numeric',
             'lat_proyek'    => 'required|numeric',
         ]);
-    
-        
+
+
         $proyek = Proyek::create([
             'nama_proyek' => $data_proyek['nama_proyek'],
             'deskripsi' => $data_proyek['deskripsi'],
@@ -55,6 +55,8 @@ class ProyekController extends Controller
 
     public function update_project(Request $request, $id)
     {
+
+
         $proyek = Proyek::find($id);
 
         if (!$proyek) {
@@ -66,19 +68,15 @@ class ProyekController extends Controller
         }
 
         $data_proyek = $request->validate([
-            'nama_proyek'   => 'required|max:50',
-            'lokasi_proyek' => 'required|max:255',
-            'deskripsi'     => 'nullable',
-            'log_proyek'    => 'nullable',
-            'lat_proyek'    => 'nullable',
+            'nama_proyek'   => 'nullable|string|max:50',
+            'lokasi_proyek' => 'nullable|string|max:255',
+            'deskripsi'     => 'nullable|string|max:225|min:50',
+            'long_proyek'   => 'nullable|numeric',
+            'lat_proyek'    => 'nullable|numeric',
         ]);
 
-        $proyek->update([
-            'nama_proyek'   => $data_proyek['nama_proyek'],
-            'lokasi_proyek' => $data_proyek['lokasi_proyek'],
-            'long_proyek'   => $data_proyek['log_proyek'],
-            'lat_proyek'    => $data_proyek['lat_proyek'],
-        ]);
+        $proyek->update($data_proyek);
+
 
         return response()->json([
             'status' => 200,

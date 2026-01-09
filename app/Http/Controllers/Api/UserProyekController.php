@@ -28,11 +28,11 @@ class UserProyekController extends Controller
             'jabatan' => 'required|string|max:20',
         ]);
 
-        $perkerja = UserProyeks::where('id_pegawai', $request->id_pegawai)->exists();
+        $perkerja = UserProyeks::where('id_proyek', $request->id_proyek)->exists();
 
         if ($perkerja) {
             return response()->json([
-                'message' => 'Pegawai sudah terdaftar di salah satu proyek lain',
+                'message' => 'Pegawai sudah terdaftar di salah satu proyek ini',
                 'status' => 403
             ]);
         }

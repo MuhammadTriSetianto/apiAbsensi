@@ -9,7 +9,8 @@ class Proyek extends Model
     //
 
     use HasFactory;
-
+    protected $table = "proyeks";
+    protected $primaryKey = "id_proyek";
     protected $fillable = [
         'nama_proyek',
         'deskripsi',
@@ -17,6 +18,7 @@ class Proyek extends Model
         'long_proyek',
         'lat_proyek',
     ];
+
     function absensis()
     {
         return $this->hasMany(Absensi::class);

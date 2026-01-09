@@ -13,6 +13,7 @@ class UserProyeks extends Model
     use HasFactory;
 
     protected $table = 'user_proyeks';
+    protected $primaryKey = 'id_user_proyek';
     protected $fillable = [
         'id_pegawai',
         'id_proyek',
