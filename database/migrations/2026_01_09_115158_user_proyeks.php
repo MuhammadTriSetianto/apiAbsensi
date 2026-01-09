@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('user_proyeks', function (Blueprint $table) {
-            $table->string("id_pegawai")->primary();          //FK(freinger key from table users)
+            $table->id('id_user_proyek');
+            $table->string("id_pegawai");          //FK(freinger key from table users)
             $table->unsignedBigInteger("id_proyek");        //FK(freinger key from table proyeks)
             $table->string("jabatan", 20);
             $table->timestamps();

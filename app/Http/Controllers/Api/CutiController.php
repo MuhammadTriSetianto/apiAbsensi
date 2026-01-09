@@ -14,7 +14,14 @@ class CutiController extends Controller
     /**
      * Simpan pengajuan cuti
      */
-
+    public function index()
+    {
+        $data = Cuti::all();
+        return response()->json([
+            "data"=> $data,
+            'success' => true
+        ]);
+    }
 
     public function store(Request $request,)
     {
@@ -82,7 +89,7 @@ class CutiController extends Controller
         $file =  $request->file('surat_cuti');
         if ($file) {
             $fileName = $request->id_proyek . '_' . $user->id_pegawai . '_' . now()->format('m.d.Y') . '.' . $file->extension();
-            $path = $file->storeAs('cuti', $fileName);
+            $path = $file->storeAs('cuti', $fileName,'public');
         }
 
         //  Simpan cuti
