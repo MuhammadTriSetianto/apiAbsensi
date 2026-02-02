@@ -12,9 +12,9 @@ class Izin extends Model
 
     protected $table = 'izins'; // ← SESUAIKAN DENGAN DB
     protected $primaryKey = 'id_izin'; // jika bukan id
-    protected $guarded = ['id_izin'];
+    protected $guarded = ['id_izin'];   
 
-    public function user(): BelongsTo
+    public function pegawai(): BelongsTo
     {
         return $this->belongsTo(pegawai::class, 'id_pegawai', 'id_pegawai');
     }

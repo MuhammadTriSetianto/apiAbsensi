@@ -19,4 +19,12 @@ class Notifikasi extends Model
         'isi',
         'status',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+
+    }
+
+   
 }

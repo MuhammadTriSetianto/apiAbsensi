@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Izin;
 use App\Models\Absensi;
+use App\Models\Notifikasi;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -75,7 +76,7 @@ class IzinController extends Controller
             ], 422);
         }
 
-        // // UPLOAD SURAT IZIN
+
         if ($request->hasFile('suratizin')) {
             $file = $request->file('suratizin');
             $fileName = $user->id_pegawai . '_' . $request->id_proyek . '_' . now()->format('m.d.Y') . '_' . uniqid() . '.' . $file->extension();
@@ -95,19 +96,58 @@ class IzinController extends Controller
             'status_izin'       => 'proses',
         ]);
 
+        if ($izin) {
+            Notifikasi::create(
+                [
+                    'id_user' => "admin",
+                    'id_pengirim' => $user->id_pegawai,
+                    'judul' => "Pengajuan Cuti",
+                    'isi' => "$user->name mengajukan cuti untuk periode $request->tanggal_mulai sampai $request->tanggal_selesai untuk $request->subjek_cuti",
+                    'status' => 'belum_dibaca',
+                ]
+            );
+            return response()->json([
+                'success' => true,
+                'message' => 'Izin berhasil diajukan.',
+                'data' => $izin
+            ], 201);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Izin berhasil diajukan.',
             'data' => $izin
         ], 201);
     }
-
-
     public function show($id)
     {
         return response()->json([
             'success' => true,
             'data' => Izin::with('pegawai', 'proyek')->findOrFail($id)
+        ], 200);
+    }
+
+    public function getIzinMonthNow()
+    {
+        $user = auth('sanctum')->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Harap login terlebih dahulu'
+            ], 401);
+        }
+
+        $date = Carbon::now();
+
+        $izin = Izin::where('id_pegawai', $user->id_pegawai)
+            ->whereYear('tanggal_mulai', $date->year)
+            ->whereMonth('tanggal_mulai', $date->month)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $izin
         ], 200);
     }
 

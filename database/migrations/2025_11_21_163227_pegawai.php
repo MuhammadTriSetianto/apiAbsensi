@@ -30,10 +30,6 @@ return new class extends Migration
             $table ->foreign('id_pegawai')->references('id_pegawai')->on('pegawais')->onDelete('cascade');
         });
 
-        Schema::table('user_proyeks', function (Blueprint $table) {
-            $table ->foreign('id_pegawai')->references('id_pegawai')->on('pegawais')->onDelete('cascade');
-        });
-
         Schema::table('izins', function (Blueprint $table) {
             $table ->foreign('id_pegawai')->references('id_pegawai')->on('pegawais')->onDelete('cascade');
         });

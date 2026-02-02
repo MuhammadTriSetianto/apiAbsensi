@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string("id_pegawai");          //FK(freinger key from table users)
             $table->unsignedBigInteger("id_proyek");       //FK(freinger key from table proyeks)
             $table->date("tanggal_absensi");
-            $table->time("jam_masuk");
+            $table->time("jam_masuk")->nullable();
             $table->time("jam_pulang")->nullable();
             $table->string("keterangan_absensi");
             $table->timestamps();

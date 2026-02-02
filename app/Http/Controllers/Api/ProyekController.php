@@ -38,7 +38,6 @@ class ProyekController extends Controller
             'lat_proyek'    => 'required|numeric',
         ]);
 
-
         $proyek = Proyek::create([
             'nama_proyek' => $data_proyek['nama_proyek'],
             'deskripsi' => $data_proyek['deskripsi'],

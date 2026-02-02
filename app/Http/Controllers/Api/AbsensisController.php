@@ -148,7 +148,7 @@ class AbsensisController extends Controller
             $proyek->long_proyek
         );
 
-        if ($jarak > 10) {
+        if ($jarak > 50) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda berada di luar radius lokasi proyek'
@@ -165,7 +165,7 @@ class AbsensisController extends Controller
             'keterangan_absensi' => 'hadir'
         ]);
 
-        // 🖼 Update / create foto absensi
+        // Update / create foto absensi
         FotoAbsensi::updateOrCreate(
             ['id_absensi' => $absen->id_absensi],
             [
@@ -184,9 +184,6 @@ class AbsensisController extends Controller
             ]
         ]);
     }
-
-
-
     private function hitungJarak($lat1, $lon1, $lat2, $lon2)
     {
         $R = 6371000; // meter
@@ -205,8 +202,7 @@ class AbsensisController extends Controller
         $user = auth('sanctum')->user();
         $hariIni = Carbon::today();
         $id_pegawai = $user->id_pegawai;
-        $absensi = Absensi::with('foto')
-            ->where('id_pegawai', $id_pegawai)
+        $absensi = Absensi::where('id_pegawai', $id_pegawai)
             ->whereDate('tanggal_absensi', $hariIni)
             ->first();
 
@@ -214,7 +210,7 @@ class AbsensisController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Belum melakukan absensi hari ini'
-            ], 404);
+            ], 200);
         }
 
         return response()->json([
@@ -235,8 +231,28 @@ class AbsensisController extends Controller
         ], 200);
     }
 
+    public function getAbsnesiBulan()
+    {
+        $user = auth('sanctum')->user() ?? null;
+        $date = Carbon::now();
 
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Harap login terlebih dahulu'
+            ], 401);
+        }
 
+        $absensiBulan = Absensi::where('id_pegawai', $user->id_pegawai,)
+            ->whereMonth('tanggal_absensi', $date->month)
+            ->whereYear('tanggal_absensi', $date->year)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $absensiBulan
+        ], 200);
+    }
     public function getAllMasukByUser()
     {
         $user = auth('sanctum')->user();
@@ -255,13 +271,13 @@ class AbsensisController extends Controller
             ->orderBy('tanggal_absensi', 'desc')
             ->get();
 
-        $izin = Izin::with(['user', 'proyek'])
-            ->where('id_pegawai', $user->id_pegawai)
+        $izin = Izin::where('id_pegawai', $user->id_pegawai)
             ->where('status_izin', 'disetujui')
             ->whereMonth('tanggal_mulai', $thisMonth->month)
             ->whereYear('tanggal_mulai', $thisMonth->year)
-            ->orderBy('tanggal_mulai', 'desc')
-            ->get();
+            ->sum(DB::raw('DATEDIFF(tanggal_selesai, tanggal_mulai) + 1'));
+
+
 
         $totalCuti = Cuti::where('id_karyawan', $user->id_pegawai)
             ->where('status_cuti', 'disetujui')
@@ -279,20 +295,18 @@ class AbsensisController extends Controller
 
     public function index()
     {
-        // Gunakan bulan dan tahun sekarang
         $bulan = Carbon::now()->month;
         $tahun = Carbon::now()->year;
 
         $start = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth();
         $end = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
 
-        // Ambil semua pegawai + jumlah absensi hadir di bulan sekarang
-        $pegawai = Pegawai::withCount(['absensi as jumlah_masuk' => function ($query) use ($start, $end) {
-            $query->where('keterangan_absensi', 'hadir') // hanya hitung yang hadir
-                ->whereBetween('tanggal_absensi', [$start, $end]);
-        }])->get(['id_pegawai', 'name']); // ambil kode & nama
 
-        // Format JSON untuk Excel
+        $pegawai = Pegawai::withCount(['absensi as jumlah_masuk' => function ($query) use ($start, $end) {
+            $query->where('keterangan_absensi', 'hadir')
+                ->whereBetween('tanggal_absensi', [$start, $end]);
+        }])->get(['id_pegawai', 'name']);
+
         $laporan = $pegawai->map(function ($p) {
             return [
                 'Id_pegawai' => $p->id_pegawai,
@@ -306,4 +320,21 @@ class AbsensisController extends Controller
             'data' => $laporan
         ]);
     }
+
+    public function getAbsenAll()
+{
+    $bulan = Carbon::now()->month;
+    $tahun = Carbon::now()->year;
+
+    $absensi = Absensi::with(['pegawai', 'proyek'])
+        ->whereMonth('tanggal_absensi', $bulan)
+        ->whereYear('tanggal_absensi', $tahun)
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $absensi
+    ]);
+}
+
 }

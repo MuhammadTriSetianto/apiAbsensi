@@ -97,26 +97,31 @@ class AuthController extends Controller
     public function profile()
     {
         $user = auth('sanctum')->user();
-
+        if (!$user) {
+            return response()->json([
+                'status' => 401,
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+        }
+        $getProfile = Pegawai::where('id_pegawai', $user->id_pegawai)->firstOrFail();
+        
         return response()->json([
             'status' => 200,
             'success' => true,
             'data' => [
-                'id_pegawai' => $user->id_pegawai,
-                'name' => $user->name,
-                'email' => $user->email,
-                'no_hp' => $user->no_hp,
-                'alamat' => $user->alamat,
-                'image' => $user->image
+                'id_pegawai' => $getProfile->id_pegawai,
+                'name' => $getProfile->name,
+                'email' => $getProfile->email,
+                'no_hp' => $getProfile->no_hp,
+                'alamat' => $getProfile->alamat,
+                'role' => $getProfile->id_role,
+                'image' => $getProfile->image
                     ? url(Storage::url($user->image))
                     : null,
             ]
         ]);
     }
-
-    // ===============================
-    // UPDATE PROFILE
-    // ===============================
     public function updateProfile(Request $request)
     {
         $authUser = $request->user();
@@ -161,11 +166,12 @@ class AuthController extends Controller
         ]);
     }
 
-    public function index () {
-        $pegawai = Pegawai::all();
+    public function index()
+    {
+        $pegawai = Pegawai::with('role')->get();
 
         return response()->json([
-            'status'=> 200,
+            'status' => 200,
             'data' => $pegawai,
             'success' => true,
         ]);

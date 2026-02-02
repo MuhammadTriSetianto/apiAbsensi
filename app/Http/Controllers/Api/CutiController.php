@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Notifikasi;
 
 class CutiController extends Controller
 {
@@ -18,7 +19,7 @@ class CutiController extends Controller
     {
         $data = Cuti::all();
         return response()->json([
-            "data"=> $data,
+            "data" => $data,
             'success' => true
         ]);
     }
@@ -89,7 +90,7 @@ class CutiController extends Controller
         $file =  $request->file('surat_cuti');
         if ($file) {
             $fileName = $request->id_proyek . '_' . $user->id_pegawai . '_' . now()->format('m.d.Y') . '.' . $file->extension();
-            $path = $file->storeAs('cuti', $fileName,'public');
+            $path = $file->storeAs('cuti', $fileName, 'public');
         }
 
         //  Simpan cuti
@@ -105,49 +106,48 @@ class CutiController extends Controller
             'status_cuti'     => 'proses',
         ]);
 
+        if ($cuti) {
+            Notifikasi::create([
+                'id_user' => "admin",
+                'id_pengirim' => $user->id_pegawai,
+                'judul' => "Pengajuan Cuti",
+                'isi' => "$user->name mengajukan cuti untuk periode $request->tanggal_mulai sampai $request->tanggal_selesai untuk $request->subjek_cuti",
+                'status' => 'belum_dibaca',
+            ]);
+        }
+
         return response()->json([
             'message' => 'Pengajuan cuti berhasil, menunggu persetujuan.',
             'data'    => $cuti
         ], 201);
     }
 
-    /**
-     * Setujui cuti (oleh admin)
-     */
     public function approve($id)
     {
-        $cuti = Cuti::findOrFail($id);
-
-        if ($cuti->status_cuti !== 'proses') {
-            return response()->json([
-                'message' => 'Cuti sudah diproses.'
-            ], 422);
-        }
+        $cuti = Cuti::where('id_cuti', $id)->firstOrFail();
 
         $cuti->update([
             'status_cuti' => 'disetujui'
         ]);
 
         return response()->json([
-            'message' => 'Cuti berhasil disetujui.'
+            'message' => 'Cuti disetujui'
         ]);
     }
 
-    /**
-     * Tolak cuti
-     */
     public function reject($id)
     {
-        $cuti = Cuti::findOrFail($id);
+        $cuti = Cuti::where('id_cuti', $id)->firstOrFail();
 
         $cuti->update([
             'status_cuti' => 'ditolak'
         ]);
 
         return response()->json([
-            'message' => 'Cuti ditolak.'
+            'message' => 'Cuti ditolak'
         ]);
     }
+
 
     public function totalCuti()
     {
@@ -162,6 +162,31 @@ class CutiController extends Controller
             'message' => 'Total cuti berhasil diambil',
         ]);
     }
+
+    public function getCutiMonthNow()
+    {
+        $user = auth('sanctum')->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Harap login terlebih dahulu'
+            ], 401);
+        }
+
+        $date = Carbon::now();
+
+        $cuti = Cuti::where('id_karyawan', $user->id_pegawai)
+            ->whereYear('tanggal_mulai', $date->year)
+            ->whereMonth('tanggal_mulai', $date->month)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $cuti
+        ], 200);
+    }
+
 
 
     private function generateIdCuti()

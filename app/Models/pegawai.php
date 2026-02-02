@@ -14,9 +14,9 @@ class Pegawai extends Authenticatable
 
     protected $table = 'pegawais';
     public $timestamps = true;
-    public $incrementing = false;  
+    public $incrementing = false;
 
-    protected $fillable = ['name', 'email', "no_hp", 'password','image',"id_pegawai", "jabatan"];
+    protected $fillable = ['name', 'email', "no_hp", 'alamat', 'password', 'image', "id_pegawai", "jabatan"];
 
     public function user_proyeks(): HasMany
     {

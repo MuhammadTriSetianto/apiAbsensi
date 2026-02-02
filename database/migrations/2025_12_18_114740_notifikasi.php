@@ -15,16 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('id_user'); //pembaca notifikasi
             $table->string('id_pengirim');
-            $table->unsignedBigInteger('id_proyek');
             $table->string('judul');
             $table->string('isi'); 
             $table->enum('status',['dibaca', 'belum_dibaca']);
             $table->timestamps();
-
-
-            $table->foreign('id_user')->references('id_pegawai')->on('pegawais')->onDelete('cascade');
             $table->foreign('id_pengirim')->references('id_pegawai')->on('pegawais')->onDelete('cascade');
-            $table->foreign('id_proyek')->references('id_proyek')->on('proyeks')->onDelete('cascade');
+          
         });
     }
 
