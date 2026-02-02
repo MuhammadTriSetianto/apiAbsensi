@@ -25,14 +25,14 @@ class UserProyekController extends Controller
         $request->validate([
             'id_pegawai' => 'required|exists:pegawais,id_pegawai',
             'id_proyek' => 'required|exists:proyeks,id_proyek',
-            'jabatan' => 'required|string|max:20',
+            'jabatan' => 'required|string|max:20|',
         ]);
 
-        $perkerja = UserProyeks::where('id_proyek', $request->id_proyek)->exists();
+        $perkerja = UserProyeks::where('id_pegawai', $request->id_pegawai)->exists();
 
         if ($perkerja) {
-            return response()->json([ 
-                'message' => 'Pegawai sudah terdaftar di salah satu proyek ini',
+            return response()->json([
+                'message' => 'Pegawai sudah terdaftar di salah satu proyek lain',
                 'status' => 403
             ]);
         }

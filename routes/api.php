@@ -7,7 +7,10 @@ use App\Http\Controllers\Api\AbsensisController;
 use App\Http\Controllers\Api\IzinController;
 use App\Http\Controllers\Api\CutiController;
 use App\Http\Controllers\Api\NotifikasiController;
-use App\Http\Controllers\Api\UserProyekController;;
+use App\Http\Controllers\Api\UserProyekController;
+use App\Models\Izin;
+
+;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,9 +26,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
-
-
-
 /*
 |--------------------------------------------------------------------------
 | PROYEK
@@ -38,7 +38,6 @@ Route::prefix('proyek')->group(function () {
     Route::put('/{id}', [ProyekController::class, 'update_project']);
     Route::delete('/delete_proyek/{id}', [ProyekController::class, 'delete_project']);
 });
-
 /*
 |--------------------------------------------------------------------------
 | ABSENSI
@@ -47,13 +46,12 @@ Route::prefix('proyek')->group(function () {
 Route::prefix('absen')->group(function () {
     Route::get('/user/today', [AbsensisController::class, 'getMasukHariIni']);
     Route::get('/user/semua', [AbsensisController::class, 'getAllMasukByUser']);
+    Route::get('/user/bulan', [AbsensisController::class, 'getAbsnesiBulan']);
+    Route::get('/user/all/bulan',[AbsensisController::class, 'getAbsenAll']);
     Route::put('/user/pulang', [AbsensisController::class, 'pulang']);
     Route::post('/user/masuk', [AbsensisController::class, 'masuk']);
-    Route::post('/pulang/{id_pegawai}', [AbsensisController::class, 'pulang']);
     Route::get('/laporan', [AbsensisController::class, 'index']);
 });
-
-
 /*
 |--------------------------------------------------------------------------
 | IZIN
@@ -63,15 +61,16 @@ Route::prefix('izin')->group(function () {
     Route::get('/', [IzinController::class, 'index']);
     Route::get('/user', [IzinController::class, 'getAllIzinByUser']);
     Route::post('/kerja', [IzinController::class, 'requestbuatizin']);
-    Route::post('/{id_surat}/disetujui', [IzinController::class, 'disetujui']);
-    Route::post('/{id_surat}/ditolak', [IzinController::class, 'ditolak']);
+    Route::get('/bulan/sekarang', [IzinController::class, 'getIzinMonthNow']);
+    Route::put('/{id_surat}/disetujui', [IzinController::class, 'disetujui']);
+    Route::put('/{id_surat}/ditolak', [IzinController::class, 'ditolak']);
     Route::delete('/{id}', [IzinController::class, 'destroy']);
 });
 /*
-    |--------------------------------------------------------------------------
-    | USERS PROYEK
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| USERS PROYEK
+|--------------------------------------------------------------------------
+*/
 Route::prefix('usersproyek')->group(function () {
     Route::get('/', [UserProyekController::class, 'index']);
     Route::post('/', [UserProyekController::class, 'store']);
@@ -80,27 +79,27 @@ Route::prefix('usersproyek')->group(function () {
     Route::delete('/delete/{idPegawai}', [UserProyekController::class, 'destroy']);
 });
 
-
 /*
-    |--------------------------------------------------------------------------
-    | CUTI
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| CUTI
+|--------------------------------------------------------------------------
+*/
 Route::prefix('cuti')->group(function () {
     Route::get('/getall', [CutiController::class, 'index']);
     Route::get('/totalcuti/user', [CutiController::class, 'totalCuti']);
+    Route::get('/bulan/sekarang', [CutiController::class, 'getCutiMonthNow']);
     Route::put('/{id}/approve', [CutiController::class, 'approve']);
     Route::put('/{id}/reject', [CutiController::class, 'reject']);
     Route::post('/buat_cuti', [CutiController::class, 'store']);
 });
-
 /*
-    |--------------------------------------------------------------------------
-    | NOTIFIKASI
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| NOTIFIKASI
+|--------------------------------------------------------------------------
+*/
 Route::prefix('notifikasi')->group(function () {
-    Route::get('/', [NotifikasiController::class, 'index']);
+    Route::get('/', [NotifikasiController::class, 'getNotifikasi']);
+    Route::get('/user', [NotifikasiController::class, 'index']);
     Route::post('/', [NotifikasiController::class, 'store']);
     Route::get('/{id}', [NotifikasiController::class, 'show']);
     Route::put('/{id}/read', [NotifikasiController::class, 'markAsRead']);
